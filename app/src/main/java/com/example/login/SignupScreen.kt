@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.google.firebase.auth.FirebaseAuth
 
 fun createUserWithEmailAndPassword(
     email: String,
@@ -25,10 +24,12 @@ fun createUserWithEmailAndPassword(
         onError("Failed to create user") // Simulate error
     }
 }
+
 @Composable
 fun SignupScreen(
-    onSignupSuccess: (String) -> Unit,
-    onLoginClicked: () -> Unit
+    authViewModel: AuthViewModel,
+    onLoginClicked: () -> Unit,
+    onSignupSuccess: Any
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -82,10 +83,10 @@ fun SignupScreen(
         Button(
             onClick = {
                 if (password == confirmPassword) {
-                    // Call the signup function
-                    createUserWithEmailAndPassword(email, password, {
+                    // Call the signup function using the ViewModel
+                    authViewModel.signup(email, password, {
                         // On success, invoke the onSignupSuccess callback
-                        onSignupSuccess(email)
+                        // Do something on success if needed
                     }) { errMsg ->
                         errorMessage = errMsg
                     }

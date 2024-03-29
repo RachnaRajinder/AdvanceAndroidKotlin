@@ -18,8 +18,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -32,12 +36,29 @@ data class LoginData(val username: String, val password: String)
 
 @Composable
 fun LoginScreen(
-    onLoginClicked: (LoginData, () -> Unit) -> Unit, // Modified to accept the login success callback
+    authViewModel: AuthViewModel,
+    onLoginClicked: (String, String) -> Unit,
     onSignUpClicked: () -> Unit,
-    onLoginSuccess: () -> Unit, // Add this for actions after successful login
+    onLoginSuccess: () -> Unit,
     initialEmail: String
 ) {
+    val loginStatusMessage by authViewModel.loginStatusMessage.collectAsState(initial = "")
+    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+
     val loginData = remember { mutableStateOf(LoginData(initialEmail, "")) }
+    var loginErrorMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(loginStatusMessage) {
+        if (loginStatusMessage.isNotEmpty()) {
+            loginErrorMessage = loginStatusMessage
+        }
+    }
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            onLoginSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -84,8 +105,8 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                // Now onLoginClicked accepts the login data and a callback for success
-                onLoginClicked(loginData.value, onLoginSuccess)
+                // Call the login function from AuthViewModel
+                onLoginClicked(loginData.value.username, loginData.value.password)
             },
             modifier = Modifier
                 .fillMaxWidth()

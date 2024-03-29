@@ -3,71 +3,60 @@ package com.example.login
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-
-
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                var showSignupScreen by remember { mutableStateOf(true) }
-                var showLoginScreen by remember { mutableStateOf(false) }
-                var loggedIn by remember { mutableStateOf(false) }
+                val authViewModel: AuthViewModel = viewModel()
+                val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
-                if (showSignupScreen) {
-                    SignupScreen(
-                        onSignupSuccess = { email ->
-                            // After successful signup, update states to show login screen
-                            showSignupScreen = false
-                            showLoginScreen = true
-                        },
-                        onLoginClicked = { // Provide a callback for login click
-                            showSignupScreen = false
-                            showLoginScreen = true
-                        }
-                    )
-                } else if (showLoginScreen) {
-                    LoginScreen(
-                        onLoginClicked = { loginData, onLoginSuccess ->
-                            // Here you should add your logic to verify login credentials
-                            // For now, let's simulate successful login
-                            onLoginSuccess()
-                        },
-                        onSignUpClicked = {
-                            // Here, set to show signup screen
-                            showSignupScreen = true
-                            showLoginScreen = false
-                        },
-                        onLoginSuccess = {
-                            // After successful login, update states to show home screen
-                            loggedIn = true
-                            showLoginScreen = false
-                        },
-                        initialEmail = "" // Set initial email if needed, empty for now
-                    )
-                } else if (loggedIn) {
+                if (isLoggedIn) {
                     HomeScreen(
-                        onLogout = { // Provide a callback for logout
-                            loggedIn = false
+                        authViewModel = authViewModel,
+                        onLogout = {
+                            authViewModel.logout()
                         }
                     )
+                } else {
+                    val showLoginScreen by authViewModel.showLogin.collectAsState()
+
+                    if (showLoginScreen) {
+                        LoginScreen(
+                            authViewModel = authViewModel,
+                            onLoginClicked = { email: String, password: String ->
+                                // Call the login function from AuthViewModel
+                                authViewModel.login(email, password)
+                            },
+                            onSignUpClicked = {
+                                // Here, navigate to the signup screen
+                                authViewModel.showLoginScreen(false)
+                            },
+                            onLoginSuccess = {
+                                // After successful login, navigate to the home screen
+                                // In your implementation, you might navigate to the home screen
+                                // using a navigation component or any other navigation library.
+                            },
+                            initialEmail = "" // Set initial email if needed, empty for now
+                        )
+                    } else {
+                        SignupScreen(
+                            authViewModel = authViewModel,
+                            onSignupSuccess = { email: String ->
+                                // After successful signup, navigate to the login screen
+                                authViewModel.showLoginScreen(true)
+                            },
+                            onLoginClicked = {
+                                // Provide a callback for login click
+                                authViewModel.showLoginScreen(true)
+                            }
+                        )
+                    }
                 }
             }
         }
